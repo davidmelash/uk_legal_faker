@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- The command line writes UTF-8 on consoles without Cyrillic (Windows cp1252), where it used to fail with
+  `'charmap' codec can't encode characters`.
+- README: the Hugging Face NER models trained on data from this generator, with their test scores.
+
 ## 0.1.0 (2026-10-19)
 
 First release, packaged from the silver-data generator of a court-decision pseudonymization project.

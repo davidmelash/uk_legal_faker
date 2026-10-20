@@ -192,6 +192,51 @@ token-level BIO tags.
 Only the placeholders are annotated. Decisions also name judges, lawyers and officials in the open. Those names stay
 in the text without labels, so tag them in a separate pass if your task needs it.
 
+## Models trained with it
+
+These Ukrainian personal-data (PII) NER models on Hugging Face were trained only on synthetic data, built with the
+generator this library comes from. That is data version 7: published court decisions whose placeholders were filled
+with synthetic values (16,067 decisions in the base variant, 42,031 in the large one). None of them saw real personal
+data. Every model card has usage code, training settings and limitations.
+
+**Recommended:**
+
+| model | base model | macro F1, relaxed | macro F1, strict | ОСОБА | АДРЕСА | НОМЕР | ІНФОРМАЦІЯ |
+|---|---|---|---|---|---|---|---|
+| [ukrainian-pii-ner-roberta-base](https://huggingface.co/davidmelash/ukrainian-pii-ner-roberta-base) | [roberta-base-wechsel-ukrainian](https://huggingface.co/benjamin/roberta-base-wechsel-ukrainian) | **0.958** | 0.912 | 0.996 | 0.972 | 0.980 | 0.885 |
+| [ukrainian-pii-ner-modernbert-large](https://huggingface.co/davidmelash/ukrainian-pii-ner-modernbert-large) | [modern-liberta-large](https://huggingface.co/Goader/modern-liberta-large) | **0.957** | 0.921 | 0.996 | 0.967 | 0.982 | 0.882 |
+
+The scores come from a held-out test set of 240 Ukrainian court decisions with character-level annotations, which
+was never used for training or model selection. Macro F1 is averaged over the four entity types. A relaxed match
+needs an overlap (IoU) of 0.5 or more; a strict match needs exact boundaries. The per-type columns are relaxed F1.
+
+```python
+from transformers import pipeline
+
+ner = pipeline("token-classification", model="davidmelash/ukrainian-pii-ner-roberta-base", aggregation_strategy="simple")
+ner("Позивач Мельничук Андрій Васильович, 12.03.1985 року народження, проживає за адресою: м. Житомир, вул. Лесі Українки, 14.")
+```
+
+The ModernBERT model needs `trust_remote_code=True` and `sentencepiece`. For decisions longer than one window, split
+the text the way the model cards show.
+
+**Other runs** (other data variants and seeds of the same two architectures):
+
+| model | data | seed | macro F1, relaxed | strict |
+|---|---|---|---|---|
+| [wechsel_base_v7large_2026-10-09_r4_s43](https://huggingface.co/davidmelash/wechsel_base_v7large_2026-10-09_r4_s43) | v7 large | 43 | 0.957 | 0.905 |
+| [wechsel_base_v7_2026-10-09_r5_s43](https://huggingface.co/davidmelash/wechsel_base_v7_2026-10-09_r5_s43) | v7 | 43 | 0.956 | 0.902 |
+| [wechsel_base_v7_2026-10-09_r5](https://huggingface.co/davidmelash/wechsel_base_v7_2026-10-09_r5) | v7 | 42 | 0.955 | 0.904 |
+| [modern_liberta_large_w2048_v7large_2026-10-09_r4_s43](https://huggingface.co/davidmelash/modern_liberta_large_w2048_v7large_2026-10-09_r4_s43) | v7 large | 43 | 0.953 | 0.925 |
+| [modern_liberta_large_w2048_v7large_2026-10-09_r4](https://huggingface.co/davidmelash/modern_liberta_large_w2048_v7large_2026-10-09_r4) | v7 large | 42 | 0.952 | 0.920 |
+| [modern_liberta_large_w2048_v7_2026-10-09_r5](https://huggingface.co/davidmelash/modern_liberta_large_w2048_v7_2026-10-09_r5) | v7 | 42 | 0.947 | 0.914 |
+| [wechsel_base](https://huggingface.co/davidmelash/wechsel_base) (first model, legacy) | v2 | 42 | 0.870 | 0.828 |
+
+Version 0.1.0 of the library differs from the data-v7 generator in a few details: the gender vote, the case of a
+person after a noun or a conjunction, the short dative and the cleaned first-name list (see
+[CHANGELOG.md](CHANGELOG.md)). The training pipeline and the evaluation are in
+[EnderLancer/anonimimizer](https://github.com/EnderLancer/anonimimizer).
+
 ## Data
 
 | table | rows | source | licence |

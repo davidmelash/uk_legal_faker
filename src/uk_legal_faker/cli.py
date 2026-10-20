@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import io
 import json
 import sys
 from collections.abc import Iterator
@@ -130,6 +131,12 @@ def main(argv: list[str] | None = None) -> None:
     p.set_defaults(func=cmd_data)
 
     a = ap.parse_args(argv)
+    # Ukrainian text on a console whose code page has no Cyrillic (cp1252 on Windows)
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError, io.UnsupportedOperation):
+            pass
     try:
         a.func(a)
     except (ValueError, FileNotFoundError) as e:

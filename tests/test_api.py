@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import datetime as dt
+import io
 import json
 import re
+import sys
 
 import pytest
 
@@ -199,3 +201,12 @@ def test_cli_generate_sample_and_fill(tmp_path, capsys):
     assert [r["id"] for r in rows] == ["a", "a"] and rows[0]["text"] != rows[1]["text"] and rows[0]["kind"] == "ЦПК"
     with pytest.raises(SystemExit):
         main(["generate", "address", "--region", "Atlantis"])
+
+
+def test_cli_writes_utf8_on_a_console_without_cyrillic(monkeypatch):
+    raw = io.BytesIO()
+    console = io.TextIOWrapper(raw, encoding="cp1252")  # the Windows default
+    monkeypatch.setattr(sys, "stdout", console)
+    main(["generate", "name", "-n", "1", "--seed", "1"])
+    console.flush()
+    assert re.fullmatch(r"[А-ЯІЇЄҐ][\w'’ʼ -]+\n", raw.getvalue().decode("utf-8").replace("\r", ""))
