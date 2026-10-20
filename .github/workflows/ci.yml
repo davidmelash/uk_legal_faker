@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.10", "3.11", "3.12", "3.13"]
+        include:
+          - os: macos-latest
+            python: "3.12"
+          - os: windows-latest
+            python: "3.12"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync
+      - run: uv run ruff check src tests scripts examples
+      - run: uv run pytest -q
+      - name: CLI smoke test
+        run: |
+          uv run uk-legal-faker generate name --case gent -n 2 --seed 1
+          uv run uk-legal-faker sample -n 1 --seed 1 --format text
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv build
+      - name: The wheel carries the data files
+        run: unzip -l dist/*.whl | grep -E "names.json.gz|addresses_osm.tsv.gz|decisions.jsonl.gz|LICENSES.md"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
